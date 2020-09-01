@@ -51,6 +51,10 @@ app.post('/urls/:shortURL/edit', (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.editedLongURL;
   res.redirect('/urls');
 });
+app.post('/login', (req, res) => {
+  res.cookie('username',req.body.username);
+  res.redirect('/urls');
+});
 
 app.get("/*", (req, res) => {
   res.status(404);
