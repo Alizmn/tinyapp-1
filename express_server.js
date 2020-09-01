@@ -26,9 +26,9 @@ function generateRandomString() {
 };
 
 app.post("/urls", (req, res) => {
-  generateRandomString();
-  console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  let uniqeShortUrl = generateRandomString();
+  urlDatabase[uniqeShortUrl] = req.body.longURL;
+  res.redirect(`/urls/${uniqeShortUrl}`);        
 });
 
 app.get("/urls/:shortURL", (req, res) => {
