@@ -109,6 +109,21 @@ app.get('/login', (req, res) => {
   res.render('urls_login', templateVars);
 })
 app.post('/login', (req, res) => {
+  const {email, password} = req.body;
+  const existedUser = emailLookup(users,email);
+  if (email && password) {
+    if (!existedUser) {
+      res.status(403);
+      res.send('403-Forbidden');
+    }
+    if (existedUser.email === email && existedUser.password === password) {
+      res.cookie('user_id',existedUser.id);
+      res.redirect('/urls');
+    } else {
+      res.status(403);
+      res.send('403-Forbidden');
+    }
+  }
   res.cookie('username',req.body.username);
   res.redirect('/urls');
 });
@@ -141,17 +156,19 @@ const createUser = (userObj, email, password) => {
 const emailLookup = function(users,email) {
   for (let key in users) {
     if (users[key].email === email) {
-      return true;
+      return users[key];
     }
   }
+  return null;
 };
 
 app.post('/register', (req, res) => {
   const {email, password} = req.body;
   if (email && password) {
+    console.log(emailLookup(users,email));
     if (emailLookup(users,email)) {
       res.status(400);
-      res.send("400 - Bad request");
+      res.send("400 - Bad request/user already exist!");
     } else {
       const newUser = createUser(users,email,password);
       const user_id = newUser.id;
