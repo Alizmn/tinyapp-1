@@ -15,22 +15,49 @@ app.use(cookieSession({
 }));
 app.set("view engine", "ejs");
 
+//database block
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+};
+//**database block end */
 
 app.get("/urls", (req, res) => {
   let templateVars = { 
-    username: req.cookies["username"],
     urls: urlDatabase };
+  const { user_id } = req.cookies;
+  for (let user in users) {
+    if (user === user_id) {
+      templateVars.user = users[user]
+    } else {
+      templateVars.user = '';
+    }
+  };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { 
-    username: req.cookies["username"],
-    };
+  let templateVars = {};
+  const { user_id } = req.cookies;
+  for (let user in users) {
+    if (user === user_id) {
+      templateVars.user = users[user]
+    } else {
+      templateVars.user = '';
+    }
+  };
   res.render("urls_new", templateVars);
 });
 
@@ -39,13 +66,21 @@ function generateRandomString() {
 };
 
 app.post("/urls", (req, res) => {
-  let uniqeShortUrl = generateRandomString();
+  const uniqeShortUrl = generateRandomString();
   urlDatabase[uniqeShortUrl] = req.body.longURL;
   res.redirect(`/urls/${uniqeShortUrl}`);        
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = {username: req.cookies["username"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  let templateVars = {shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const { user_id } = req.cookies;
+  for (let user in users) {
+    if (user === user_id) {
+      templateVars.user = users[user]
+    } else {
+      templateVars.user = '';
+    }
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -70,14 +105,35 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 app.get('/register', (req, res) => {
-  let templateVars = { 
-    username: req.cookies["username"],
-    };
+  let templateVars = {};
+  const { user_id } = req.cookies;
+  for (let user in users) {
+    if (user === user_id) {
+      templateVars.user = users[user]
+    } else {
+      templateVars.user = '';
+    }
+  };
   res.render('urls_register',templateVars);
-})
+});
+
+const createUser = (userObj, email, password) => {
+  const randomId = generateRandomString();
+  return userObj[randomId] = {
+    id: randomId,
+    email,
+    password
+  }
+};
+
 app.post('/register', (req, res) => {
-  
-})
+  const {email, password} = req.body;
+  const newUser = createUser(users,email,password);
+  const user_id = newUser.id;
+  res.cookie('user_id',user_id);
+  console.log(users);
+  res.redirect('/urls');
+});
 
 app.get("/*", (req, res) => {
   res.status(404);
