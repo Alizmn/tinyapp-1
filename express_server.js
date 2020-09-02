@@ -96,6 +96,18 @@ app.post('/urls/:shortURL/edit', (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.editedLongURL;
   res.redirect('/urls');
 });
+app.get('/login', (req, res) => {
+  let templateVars = {};
+  const { user_id } = req.cookies;
+  for (let user in users) {
+    if (user === user_id) {
+      templateVars.user = users[user]
+    } else {
+      templateVars.user = '';
+    }
+  };
+  res.render('urls_login', templateVars);
+})
 app.post('/login', (req, res) => {
   res.cookie('username',req.body.username);
   res.redirect('/urls');
