@@ -101,10 +101,11 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 });
 app.post('/logout', (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect('/urls');
 });
 app.get('/register', (req, res) => {
+  console.log(users);
   let templateVars = {};
   const { user_id } = req.cookies;
   for (let user in users) {
@@ -125,14 +126,33 @@ const createUser = (userObj, email, password) => {
     password
   }
 };
+const emailLookup = function(users,email) {
+  for (let key in users) {
+    if (users[key].email === email) {
+      return true;
+    }
+  }
+};
 
 app.post('/register', (req, res) => {
   const {email, password} = req.body;
-  const newUser = createUser(users,email,password);
-  const user_id = newUser.id;
-  res.cookie('user_id',user_id);
-  console.log(users);
-  res.redirect('/urls');
+  if (email && password) {
+    if (emailLookup(users,email)) {
+      res.status(400);
+      res.send("400 - Bad request");
+    } else {
+      const newUser = createUser(users,email,password);
+      const user_id = newUser.id;
+      res.cookie('user_id',user_id);
+      console.log(users);
+      res.redirect('/urls');
+    }
+    
+  } else {
+    res.status(400);
+    res.send("400 - Bad request");
+  }
+  
 });
 
 app.get("/*", (req, res) => {
