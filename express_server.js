@@ -21,12 +21,12 @@ app.set("view engine", "ejs");
   "9sm5xK": "http://www.google.com"
 };*/
 const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
+  b6UTxQ: { longURL: "https://www.tsn.ca", user_id: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", user_id: "aJ48lW" }
 };
 const users = { 
-  "userRandomID": {
-    id: "userRandomID", 
+  "john": {
+    id: "john", 
     email: "user@example.com", 
     password: "purple-monkey-dinosaur"
   },
@@ -36,20 +36,30 @@ const users = {
     password: "dishwasher-funk"
   }
 };
+const emailLookup = function(users,email) {
+  for (let key in users) {
+    if (users[key]['email'] === email) {
+      return users[key];
+    }
+  }
+  return "";
+};
 //**database block end */
 
 app.get("/urls", (req, res) => {
   let templateVars = { 
     urls: urlDatabase };
-  const { user_id } = req.cookies;
+  const  {user_id}  = req.cookies;
+  //console.log(user_id);
+  templateVars.user = "";
   for (let user in users) {
+    //console.log(user);
     if (user === user_id) {
       templateVars.user = users[user]
-    } else {
-      templateVars.user = '';
     }
   };
-  console.log(urlDatabase);
+  
+  //console.log(templateVars);
   res.render("urls_index", templateVars);
 });
 
@@ -57,12 +67,11 @@ app.get("/urls/new", (req, res) => {
   let templateVars = {};
   const { user_id } = req.cookies;
   if (user_id) {
+    templateVars.user = "";
     for (let user in users) {
       if (user === user_id) {
         templateVars.user = users[user]
-      } else {
-        templateVars.user = '';
-      }
+      } 
     };
     res.render("urls_new", templateVars);
   } else {
@@ -87,11 +96,10 @@ app.get("/urls/:shortURL", (req, res) => {
   const {longURL} = urlDatabase[req.params.shortURL];
   let templateVars = {shortURL: req.params.shortURL, longURL };
   const { user_id } = req.cookies;
+  templateVars.user = "";
   for (let user in users) {
     if (user === user_id) {
       templateVars.user = users[user]
-    } else {
-      templateVars.user = '';
     }
   };
   res.render("urls_show", templateVars);
@@ -114,11 +122,10 @@ app.post('/urls/:shortURL/edit', (req, res) => {
 app.get('/login', (req, res) => {
   let templateVars = {};
   const { user_id } = req.cookies;
+  templateVars.user = "";
   for (let user in users) {
     if (user === user_id) {
-      templateVars.user = users[user]
-    } else {
-      templateVars.user = '';
+      templateVars.user = users[user];
     }
   };
   res.render('urls_login', templateVars);
@@ -147,14 +154,13 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 app.get('/register', (req, res) => {
-  console.log(users);
+  //console.log(users);
   let templateVars = {};
   const { user_id } = req.cookies;
+  templateVars.user = "";
   for (let user in users) {
     if (user === user_id) {
       templateVars.user = users[user]
-    } else {
-      templateVars.user = '';
     }
   };
   res.render('urls_register',templateVars);
@@ -168,19 +174,12 @@ const createUser = (userObj, email, password) => {
     password
   }
 };
-const emailLookup = function(users,email) {
-  for (let key in users) {
-    if (users[key].email === email) {
-      return users[key];
-    }
-  }
-  return null;
-};
+
 
 app.post('/register', (req, res) => {
   const {email, password} = req.body;
   if (email && password) {
-    console.log(emailLookup(users,email));
+    //console.log(emailLookup(users,email));
     if (emailLookup(users,email)) {
       res.status(400);
       res.send("400 - Bad request/user already exist!");
@@ -188,7 +187,7 @@ app.post('/register', (req, res) => {
       const newUser = createUser(users,email,password);
       const user_id = newUser.id;
       res.cookie('user_id',user_id);
-      console.log(users);
+      //console.log(users);
       res.redirect('/urls');
     }
     
