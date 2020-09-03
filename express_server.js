@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+//const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 const bcrypt = require('bcrypt');
@@ -10,10 +10,10 @@ const saltRounds = 10;
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan('dev'));
-app.use(cookieParser());
+//app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
-  keys: ['key1', 'key2']
+  keys: ['I am awesome', 'I am the best fullstack developer']
 }));
 app.set("view engine", "ejs");
 
@@ -60,26 +60,16 @@ const urlsForUser = function(id) {
 //**database block end */
 
 app.get("/urls", (req, res) => {
-  //let templateVars = {};
-  const  userID  = req.cookies['user_id'];
+  const  userID  = req.session.user_id;
   const loggedInUser = users[userID];
   let templateVars = {urls: urlsForUser(userID), user: loggedInUser };
-  //templateVars.user = "";
-  /*for (let user in users) {
-    //console.log(user);
-    if (user === userID) {
-      templateVars.user = users[user];
-      templateVars.urls = urlsForUser(user);
-    }
-  };*/
-  
   console.log(templateVars);
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   let templateVars = {};
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (userID) {
     const loggedInUser = users[userID];
     templateVars = { user: loggedInUser };
@@ -97,14 +87,14 @@ function generateRandomString() {
 app.post("/urls", (req, res) => {
   const uniqeShortUrl = generateRandomString();
   const longURL = req.body.longURL;
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   urlDatabase[uniqeShortUrl]= {longURL, userID };
   console.log(urlDatabase);
   res.redirect(`/urls/${uniqeShortUrl}`);        
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   const longURL = urlDatabase[req.params.shortURL].longURL;
   let templateVars = {shortURL: req.params.shortURL, longURL };
   if (userID) {
@@ -127,7 +117,7 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 app.post('/urls/:shortURL/delete', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (urlDatabase[req.params.shortURL].userID === userID) {
     delete urlDatabase[req.params.shortURL];
     res.redirect("/urls");
@@ -139,7 +129,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 });
 app.post('/urls/:shortURL/edit', (req, res) => {
   const longURL = req.body.editedLongURL;
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   if (urlDatabase[req.params.shortURL].userID === userID) {
     urlDatabase[req.params.shortURL]= {longURL, userID };
     res.redirect('/urls');
@@ -152,7 +142,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
 
 app.get('/login', (req, res) => {
   let templateVars = {};
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   templateVars.user = "";
   for (let user in users) {
     if (user === userID) {
@@ -193,7 +183,7 @@ app.post('/login', (req, res) => {
   const existedUser = authenticateUser(email,password);
   if (email && password) {
     if (existedUser) {
-      res.cookie('user_id',existedUser.id);
+      req.session.user_id = existedUser.id;
       res.redirect('/urls');
     } else {
       res.status(403);
@@ -205,12 +195,12 @@ app.post('/login', (req, res) => {
   }
 });
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   res.redirect('/urls');
 });
 app.get('/register', (req, res) => {
   let templateVars = {};
-  const userID = req.cookies['user_id'];
+  const userID = req.session.user_id;
   templateVars.user = "";
   for (let user in users) {
     if (user === userID) {
@@ -239,8 +229,8 @@ app.post('/register', (req, res) => {
       res.send("400 - Bad request/user already exist!");
     } else {
       const newUser = createUser(users,email,password);
-      const user_id = newUser.id;
-      res.cookie('user_id',user_id);
+      const userID = newUser.id;
+      req.session.user_id = userID;
       //console.log(users);
       res.redirect('/urls');
     }
