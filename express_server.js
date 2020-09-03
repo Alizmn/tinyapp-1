@@ -44,18 +44,29 @@ const emailLookup = function(users,email) {
   }
   return "";
 };
+
+const urlsForUser = function(id) {
+  let urls = {};
+  for (let shortURL in urlDatabase) {
+    if (id === urlDatabase[shortURL].user_id) {
+      urls[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return urls;
+}
+
 //**database block end */
 
 app.get("/urls", (req, res) => {
-  let templateVars = { 
-    urls: urlDatabase };
+  let templateVars = {};
   const  {user_id}  = req.cookies;
   //console.log(user_id);
   templateVars.user = "";
   for (let user in users) {
     //console.log(user);
     if (user === user_id) {
-      templateVars.user = users[user]
+      templateVars.user = users[user];
+      templateVars.urls = urlsForUser(user);
     }
   };
   
