@@ -21,12 +21,12 @@ app.set("view engine", "ejs");
   "9sm5xK": "http://www.google.com"
 };*/
 const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", user_id: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", user_id: "aJ48lW" }
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 const users = { 
-  "john": {
-    id: "john", 
+  "userRandomID": {
+    id: "userRandomID", 
     email: "user@example.com", 
     password: "purple-monkey-dinosaur"
   },
@@ -48,7 +48,7 @@ const emailLookup = function(users,email) {
 const urlsForUser = function(id) {
   let urls = {};
   for (let shortURL in urlDatabase) {
-    if (id === urlDatabase[shortURL].user_id) {
+    if (id === urlDatabase[shortURL].userID) {
       urls[shortURL] = urlDatabase[shortURL];
     }
   }
@@ -58,32 +58,29 @@ const urlsForUser = function(id) {
 //**database block end */
 
 app.get("/urls", (req, res) => {
-  let templateVars = {};
-  const  {user_id}  = req.cookies;
-  //console.log(user_id);
-  templateVars.user = "";
-  for (let user in users) {
+  //let templateVars = {};
+  const  userID  = req.cookies['user_id'];
+  const loggedInUser = users[userID];
+  let templateVars = {urls: urlsForUser(userID), user: loggedInUser };
+  //templateVars.user = "";
+  /*for (let user in users) {
     //console.log(user);
-    if (user === user_id) {
+    if (user === userID) {
       templateVars.user = users[user];
       templateVars.urls = urlsForUser(user);
     }
-  };
+  };*/
   
-  //console.log(templateVars);
+  console.log(templateVars);
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   let templateVars = {};
-  const { user_id } = req.cookies;
-  if (user_id) {
-    templateVars.user = "";
-    for (let user in users) {
-      if (user === user_id) {
-        templateVars.user = users[user]
-      } 
-    };
+  const userID = req.cookies['user_id'];
+  if (userID) {
+    const loggedInUser = users[userID];
+    templateVars = { user: loggedInUser };
     res.render("urls_new", templateVars);
   } else {
     res.redirect('/urls');
@@ -98,22 +95,29 @@ function generateRandomString() {
 app.post("/urls", (req, res) => {
   const uniqeShortUrl = generateRandomString();
   const longURL = req.body.longURL;
-  const {user_id} = req.cookies;
-  urlDatabase[uniqeShortUrl]= {longURL, user_id };
+  const userID = req.cookies['user_id'];
+  urlDatabase[uniqeShortUrl]= {longURL, userID };
+  console.log(urlDatabase);
   res.redirect(`/urls/${uniqeShortUrl}`);        
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const {longURL} = urlDatabase[req.params.shortURL];
+  const userID = req.cookies['user_id'];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   let templateVars = {shortURL: req.params.shortURL, longURL };
-  const { user_id } = req.cookies;
-  templateVars.user = "";
-  for (let user in users) {
-    if (user === user_id) {
-      templateVars.user = users[user]
+  if (userID) {
+    if (urlDatabase[req.params.shortURL].userID === userID) {
+      templateVars.user = users[userID];
+      res.render("urls_show", templateVars);
+    } else {
+      res.status(403);
+      res.send('403-Forbidden');
     }
-  };
-  res.render("urls_show", templateVars);
+    
+  } else {
+    res.redirect('/urls');
+  }
+  
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -121,21 +125,34 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 app.post('/urls/:shortURL/delete', (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect("/urls");
+  const userID = req.cookies['user_id'];
+  if (urlDatabase[req.params.shortURL].userID === userID) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect("/urls");
+  } else {
+    res.status(403);
+    res.send('403-Forbidden');
+  }
+  
 });
 app.post('/urls/:shortURL/edit', (req, res) => {
   const longURL = req.body.editedLongURL;
-  const {user_id} = req.cookies;
-  urlDatabase[req.params.shortURL]= {longURL, user_id };
-  res.redirect('/urls');
+  const userID = req.cookies['user_id'];
+  if (urlDatabase[req.params.shortURL].userID === userID) {
+    urlDatabase[req.params.shortURL]= {longURL, userID };
+    res.redirect('/urls');
+  } else {
+    res.status(403);
+    res.send('403-Forbidden');
+  }
+  
 });
 app.get('/login', (req, res) => {
   let templateVars = {};
-  const { user_id } = req.cookies;
+  const userID = req.cookies['user_id'];
   templateVars.user = "";
   for (let user in users) {
-    if (user === user_id) {
+    if (user === userID) {
       templateVars.user = users[user];
     }
   };
@@ -157,8 +174,6 @@ app.post('/login', (req, res) => {
       res.send('403-Forbidden');
     }
   }
-  res.cookie('username',req.body.username);
-  res.redirect('/urls');
 });
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
@@ -167,10 +182,10 @@ app.post('/logout', (req, res) => {
 app.get('/register', (req, res) => {
   //console.log(users);
   let templateVars = {};
-  const { user_id } = req.cookies;
+  const userID = req.cookies['user_id'];
   templateVars.user = "";
   for (let user in users) {
-    if (user === user_id) {
+    if (user === userID) {
       templateVars.user = users[user]
     }
   };
