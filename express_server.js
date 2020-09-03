@@ -5,6 +5,8 @@ const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan('dev'));
@@ -28,12 +30,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
  "user2RandomID": {
     id: "user2RandomID", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10) 
   }
 };
 const emailLookup = function(users,email) {
@@ -147,6 +149,7 @@ app.post('/urls/:shortURL/edit', (req, res) => {
   }
   
 });
+
 app.get('/login', (req, res) => {
   let templateVars = {};
   const userID = req.cookies['user_id'];
@@ -157,22 +160,48 @@ app.get('/login', (req, res) => {
     }
   };
   res.render('urls_login', templateVars);
-})
+});
+
+// Authentication
+const findUserByEmail = (email) => {
+  // loop through the users object
+  for (let id in users) {
+    // compare the emails, if they match return the user obj
+    if (users[id].email === email) {
+      return users[id];
+    }
+  };
+
+  // after the loop, return false
+  return false;
+};
+const authenticateUser = (email, password) => {
+  // retrieve the user with that email
+  const user = findUserByEmail(email);
+
+  // if we got a user back and the passwords match then return the userObj
+  if (user && bcrypt.compareSync(password, user.password)) {
+    // user is authenticated
+    return user;
+  } else {
+    // Otherwise return false
+    return false;
+  }
+};
 app.post('/login', (req, res) => {
   const {email, password} = req.body;
-  const existedUser = emailLookup(users,email);
+  const existedUser = authenticateUser(email,password);
   if (email && password) {
-    if (!existedUser) {
-      res.status(403);
-      res.send('403-Forbidden');
-    }
-    if (existedUser.email === email && existedUser.password === password) {
+    if (existedUser) {
       res.cookie('user_id',existedUser.id);
       res.redirect('/urls');
     } else {
       res.status(403);
       res.send('403-Forbidden');
     }
+  } else {
+    res.status(400);
+    res.send("400 - Bad request");
   }
 });
 app.post('/logout', (req, res) => {
@@ -180,7 +209,6 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 app.get('/register', (req, res) => {
-  //console.log(users);
   let templateVars = {};
   const userID = req.cookies['user_id'];
   templateVars.user = "";
@@ -197,7 +225,7 @@ const createUser = (userObj, email, password) => {
   return userObj[randomId] = {
     id: randomId,
     email,
-    password
+    password: bcrypt.hashSync(password, saltRounds)
   }
 };
 
