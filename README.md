@@ -10,8 +10,12 @@ TinyApp allows the user to store a list of their short URLs, and modify them as 
 Below is  the screenshots of the final product.
 
 
-!["Screenshot of URLs page"](#)
-!["Screenshot of register page"](#)
+!["Screenshot of URLs page"](https://github.com/SepidehZV/tinyapp/blob/master/docs/urls-page.png?raw=true)
+!["Screenshot of Register page"](https://github.com/SepidehZV/tinyapp/blob/master/docs/register-page.jpeg?raw=true)
+!["Screenshot of Login page"](https://github.com/SepidehZV/tinyapp/blob/master/docs/login-page.jpeg?raw=true)
+!["Screenshot of My URLs page"](https://github.com/SepidehZV/tinyapp/blob/master/docs/myURLs-page.jpeg?raw=true)
+!["Screenshot of Create Tiny URLs page"](https://github.com/SepidehZV/tinyapp/blob/master/docs/newURL-page.jpeg?raw=true)
+!["Screenshot of a Tiny URL page"](https://github.com/SepidehZV/tinyapp/blob/master/docs/urlsID-page.jpeg?raw=true)
 
 ## Dependencies
 
