@@ -6,7 +6,7 @@ const findUserByEmail = (email, database) => {
     if (database[id].email === email) {
       return database[id];
     }
-  };
+  }
   // after the loop, return false
   return false;
 };
