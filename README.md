@@ -10,8 +10,8 @@ TinyApp allows the user to store a list of their short URLs, and modify them as 
 Below is  the screenshots of the final product.
 
 
-!["screenshot description"](#)
-!["screenshot description"](#)
+!["Screenshot of URLs page"](#)
+!["Screenshot of register page"](#)
 
 ## Dependencies
 
