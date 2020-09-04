@@ -7,6 +7,7 @@ const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const { findUserByEmail } = require('./helpers');
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(morgan('dev'));
@@ -18,10 +19,7 @@ app.use(cookieSession({
 app.set("view engine", "ejs");
 
 //database block
-/*const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};*/
+
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
@@ -38,16 +36,11 @@ const users = {
     password: bcrypt.hashSync("dishwasher-funk", 10) 
   }
 };
-const emailLookup = function(users,email) {
-  for (let key in users) {
-    if (users[key]['email'] === email) {
-      return users[key];
-    }
-  }
-  return "";
-};
 
-const urlsForUser = function(id) {
+//***database block end ***//
+
+//**helper functions**//
+const urlsForUser = function(id, urlDatabase) {
   let urls = {};
   for (let shortURL in urlDatabase) {
     if (id === urlDatabase[shortURL].userID) {
@@ -55,14 +48,39 @@ const urlsForUser = function(id) {
     }
   }
   return urls;
-}
+};
 
-//**database block end */
+const generateRandomString = function() {
+  return Math.random().toString(36).substring(2,8);
+};
+
+const authenticateUser = (email, password) => {
+  // retrieve the user with that email
+  const user = findUserByEmail(email, users);
+  // if we got a user back and the passwords match then return the userObj
+  if (user && bcrypt.compareSync(password, user.password)) {
+    // user is authenticated
+    return user;
+  } else {
+    // Otherwise return false
+    return false;
+  }
+};
+
+const createUser = (userObj, email, password) => {
+  const randomId = generateRandomString();
+  return userObj[randomId] = {
+    id: randomId,
+    email,
+    password: bcrypt.hashSync(password, saltRounds)
+  }
+};
+//*******//
 
 app.get("/urls", (req, res) => {
   const  userID  = req.session.user_id;
   const loggedInUser = users[userID];
-  let templateVars = {urls: urlsForUser(userID), user: loggedInUser };
+  let templateVars = {urls: urlsForUser(userID,urlDatabase), user: loggedInUser };
   console.log(templateVars);
   res.render("urls_index", templateVars);
 });
@@ -75,14 +93,10 @@ app.get("/urls/new", (req, res) => {
     templateVars = { user: loggedInUser };
     res.render("urls_new", templateVars);
   } else {
-    res.redirect('/urls');
+    res.redirect('/login');
   }
   
 });
-
-function generateRandomString() {
-  return Math.random().toString(36).substring(2,8);
-};
 
 app.post("/urls", (req, res) => {
   const uniqeShortUrl = generateRandomString();
@@ -95,10 +109,15 @@ app.post("/urls", (req, res) => {
 
 app.get("/urls/:shortURL", (req, res) => {
   const userID = req.session.user_id;
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  let templateVars = {shortURL: req.params.shortURL, longURL };
   if (userID) {
+    if (!urlDatabase[req.params.shortURL]) {
+      res.status(404);
+      res.send("404 - Not found");
+      res.end();
+    }
     if (urlDatabase[req.params.shortURL].userID === userID) {
+      const longURL = urlDatabase[req.params.shortURL].longURL;
+      let templateVars = {shortURL: req.params.shortURL, longURL };
       templateVars.user = users[userID];
       res.render("urls_show", templateVars);
     } else {
@@ -152,32 +171,6 @@ app.get('/login', (req, res) => {
   res.render('urls_login', templateVars);
 });
 
-// Authentication
-const findUserByEmail = (email) => {
-  // loop through the users object
-  for (let id in users) {
-    // compare the emails, if they match return the user obj
-    if (users[id].email === email) {
-      return users[id];
-    }
-  };
-
-  // after the loop, return false
-  return false;
-};
-const authenticateUser = (email, password) => {
-  // retrieve the user with that email
-  const user = findUserByEmail(email);
-
-  // if we got a user back and the passwords match then return the userObj
-  if (user && bcrypt.compareSync(password, user.password)) {
-    // user is authenticated
-    return user;
-  } else {
-    // Otherwise return false
-    return false;
-  }
-};
 app.post('/login', (req, res) => {
   const {email, password} = req.body;
   const existedUser = authenticateUser(email,password);
@@ -210,28 +203,16 @@ app.get('/register', (req, res) => {
   res.render('urls_register',templateVars);
 });
 
-const createUser = (userObj, email, password) => {
-  const randomId = generateRandomString();
-  return userObj[randomId] = {
-    id: randomId,
-    email,
-    password: bcrypt.hashSync(password, saltRounds)
-  }
-};
-
-
 app.post('/register', (req, res) => {
   const {email, password} = req.body;
   if (email && password) {
-    //console.log(emailLookup(users,email));
-    if (emailLookup(users,email)) {
+    if (findUserByEmail(email, users)) {
       res.status(400);
       res.send("400 - Bad request/user already exist!");
     } else {
       const newUser = createUser(users,email,password);
       const userID = newUser.id;
       req.session.user_id = userID;
-      //console.log(users);
       res.redirect('/urls');
     }
     
