@@ -77,6 +77,15 @@ const createUser = (userObj, email, password) => {
 };
 //*******//
 
+app.get('/', (req, res) => {
+  const  userID  = req.session.user_id;
+  if (userID) {
+    res.redirect('/urls');
+  } else {
+    res.redirect('/login');
+  }
+})
+
 app.get("/urls", (req, res) => {
   const  userID  = req.session.user_id;
   const loggedInUser = users[userID];
@@ -132,8 +141,14 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const {longURL} = urlDatabase[req.params.shortURL];
-  res.redirect(longURL);
+  if (urlDatabase[req.params.shortURL]) {
+    const {longURL} = urlDatabase[req.params.shortURL];
+    res.redirect(longURL);
+  } else {
+    res.status(404);
+    res.send("404 - Not found");
+  }
+  
 });
 app.post('/urls/:shortURL/delete', (req, res) => {
   const userID = req.session.user_id;
@@ -160,15 +175,16 @@ app.post('/urls/:shortURL/edit', (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  let templateVars = {};
+  
   const userID = req.session.user_id;
-  templateVars.user = "";
-  for (let user in users) {
-    if (user === userID) {
-      templateVars.user = users[user];
-    }
-  };
-  res.render('urls_login', templateVars);
+  if (userID) {
+    res.redirect('/urls');
+  } else {
+    let templateVars = {};
+    templateVars.user = users[userID]
+    res.render('urls_login', templateVars);
+  }
+  
 });
 
 app.post('/login', (req, res) => {
@@ -192,15 +208,15 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 });
 app.get('/register', (req, res) => {
-  let templateVars = {};
   const userID = req.session.user_id;
-  templateVars.user = "";
-  for (let user in users) {
-    if (user === userID) {
-      templateVars.user = users[user]
-    }
-  };
-  res.render('urls_register',templateVars);
+  if (userID) {
+    res.redirect('/urls');
+    
+  } else {
+    let templateVars = {};
+    templateVars.user = users[userID];
+    res.render('urls_register',templateVars);
+  }
 });
 
 app.post('/register', (req, res) => {
